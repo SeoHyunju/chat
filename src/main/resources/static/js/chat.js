@@ -169,7 +169,6 @@ function sendMessage(event) {
             type: 'CHAT',
             content: messageInput.value,
             sender: username
-
         };
         stompClient.send("/app/chat.sendMessage/"+currentRoom.id, {}, JSON.stringify(message));
         messageInput.value = '';
