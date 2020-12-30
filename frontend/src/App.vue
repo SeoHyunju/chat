@@ -27,9 +27,9 @@
       </v-navigation-drawer>
 
       <v-main class="chat-main">
-        <div v-if="mIndex == null">
+        <main-room v-if="mIndex == null">
           채팅방을 눌러주세요호요호호호호호
-        </div>
+        </main-room>
 
         <div v-else class="chat-content">
           <div class="chat-header">
@@ -42,11 +42,11 @@
             <span ref="span" :class="{'event-message-cover' : messageCoverActive, 'chat-message-cover': chatCoverActive, me:meActive}" ></span>
           </ul>
 
-          <form action="" class="chat-form">
-            <input type="text" v-model="messageInput" placeholder="메시지 입력">
+          <form class="chat-form">
+            <input type="text" v-model="messageInput" @keyup.enter="sendMessage" placeholder="메시지 입력">
 
             <div class="form-buttons">
-              <v-btn @click="sendMessage">전송</v-btn>
+              <v-btn @click="sendMessage" >전송</v-btn>
             </div>
           </form>
         </div>
@@ -95,6 +95,16 @@ export default {
     mIndex:null
   }),
   methods:{
+    disConnect(){
+      if(this.$store.state.stompClient !== null){
+        this.$store.state.stompClient.send('/app/chat.removeUser/' + this.currentRoom[this.mIndex].id,
+          JSON.stringify({sender:this.userName, type:'LEAVE'})
+        )
+        this.$store.state.stompClient.this.disConnect();
+        this.currentRoom = null
+      }
+    },
+
     sendMessage() {
       var messageContent = this.messageInput.trim()
       if (messageContent && this.$store.state.stompClient) {
@@ -103,7 +113,7 @@ export default {
           content: this.messageInput,
           sender:this.userName
         };
-        this.$store.state.stompClient.send("/app/chat.sendMessage/" + this.currentRoom[0].id,  JSON.stringify(message));
+        this.$store.state.stompClient.send("/app/chat.sendMessage/" + this.currentRoom[this.mIndex].id,  JSON.stringify(message));
         this.messageInput = '';
       }
     },  
@@ -114,7 +124,7 @@ export default {
       
       if(this.userName){
       
-         //this.disConnect();
+        this.disConnect();
         this.currentRoom = this.rooms;
         this.$store.state.socket = new SockJS('http://192.168.1.49:8090/ws')
         this.$store.state.stompClient = Stomp.over(this.$store.state.socket)
@@ -122,7 +132,6 @@ export default {
             {},
             () => {
               console.log('소켓연결 성공');
-              // this.$store.state.stompClient.subscribe('/topic/'+this.currentRoom[index].id, this.onMessageReceived)
               
               this.$store.state.stompClient.subscribe('/topic/'+this.currentRoom[index].id, res=>{
 
@@ -132,7 +141,11 @@ export default {
                   this.messageActive = true
                   this.messageCoverActive = true
                   resJson.content = resJson.content + '방에' + resJson.sender + '님이 입장하였습니다.'
-                }else if(resJson.type === "CHAT"){
+                }else if(resJson.type === "LEAVE"){
+                  this.messageActive =  true
+                  this.messageCoverActive = true
+                  resJson.content = resJson.sender + '님이 나갔습니다.'
+                }else{
                   this.chatAcive = true
                   this.chatCoverActive = true
 
@@ -158,6 +171,7 @@ export default {
                 textElement.appendChild(messageText)
 
                 this.$refs.span.appendChild(textElement)
+                this.$refs.li.appendChild(this.$refs.span)
 
                 this.$refs.messageArea.appendChild(this.$refs.span)
                 
@@ -177,6 +191,8 @@ export default {
           )
 
           // 대화 초기화 설정하기
+          this.$refs.messageArea = null;
+
       }
     },
     listIndex(index){
