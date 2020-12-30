@@ -1,7 +1,7 @@
 <template>
   <v-app>
-    <v-row>
-      <v-navigation-drawer class="aside-content">
+    <div class="mobile-content">
+      <div class="aside-content">
         <v-list class="menu-list">
           <p> Chat</p>
           <v-list-item-group
@@ -24,26 +24,24 @@
             </v-list-item>
           </v-list-item-group>
         </v-list>
-      </v-navigation-drawer>
+      </div>
 
-      <v-main class="chat-main">
-        <main-room v-if="mIndex == null">
-          채팅방을 눌러주세요호요호호호호호
-        </main-room>
-
-        <div v-else class="chat-content">
+      <v-main class="chat-main" :class="{on:chatContentActive}">
+        <main-room v-if="mIndex == null" class="main-null-contnet" />
+        
+        <div v-else class="chat-content" >
           <div class="chat-header">
-            <span><img :src = rooms[mIndex].img></span>
+            <v-btn @click="exit"><v-icon>mdi-arrow-left-bold</v-icon> </v-btn>
+            <span class="img-icon"><img :src = rooms[mIndex].img></span>
             {{currentRoom[mIndex].title}}
           </div>
           
           <ul ref="messageArea" class="message-area">
-            <li ref="li" :class="{'event-message' : messageActive, 'chat-message-cover':chatActive, me:meActive}"></li>
-            <span ref="span" :class="{'event-message-cover' : messageCoverActive, 'chat-message-cover': chatCoverActive, me:meActive}" ></span>
+            
           </ul>
 
           <form class="chat-form">
-            <input type="text" v-model="messageInput" @keyup.enter="sendMessage" placeholder="메시지 입력">
+            <input type="text" v-model="messageInput" @keydown.enter="sendMessage" placeholder="메시지 입력">
 
             <div class="form-buttons">
               <v-btn @click="sendMessage" >전송</v-btn>
@@ -51,7 +49,7 @@
           </form>
         </div>
       </v-main>
-    </v-row>
+    </div>
   </v-app>
 </template>
 
@@ -62,11 +60,7 @@ import SockJS from 'sockjs-client'
 export default {
   name: 'App',
   data: () => ({
-    messageActive : false,
-    chatActive:false,
-    messageCoverActive:false,
-    chatCoverActive:false,
-    meActive:false,
+    chatContentActive:false,
     userName: "",
     message: "",
     currentRoom: null,
@@ -100,12 +94,13 @@ export default {
         this.$store.state.stompClient.send('/app/chat.removeUser/' + this.currentRoom[this.mIndex].id,
           JSON.stringify({sender:this.userName, type:'LEAVE'})
         )
-        this.$store.state.stompClient.this.disConnect();
+        this.$store.state.stompClient.disConnect();
         this.currentRoom = null
       }
     },
 
-    sendMessage() {
+    sendMessage(e) {
+      console.log("전송 버튼");
       var messageContent = this.messageInput.trim()
       if (messageContent && this.$store.state.stompClient) {
         var message = { 
@@ -116,6 +111,9 @@ export default {
         this.$store.state.stompClient.send("/app/chat.sendMessage/" + this.currentRoom[this.mIndex].id,  JSON.stringify(message));
         this.messageInput = '';
       }
+
+      e.preventDefault();
+      
     },  
 
     connectWebSocket(index){
@@ -129,77 +127,84 @@ export default {
         this.$store.state.socket = new SockJS('http://192.168.1.49:8090/ws')
         this.$store.state.stompClient = Stomp.over(this.$store.state.socket)
         this.$store.state.stompClient.connect(
-            {},
-            () => {
-              console.log('소켓연결 성공');
-              
-              this.$store.state.stompClient.subscribe('/topic/'+this.currentRoom[index].id, res=>{
+          {},
+          () => {
+            console.log('소켓연결 성공');
+            
+            this.$store.state.stompClient.subscribe('/topic/'+this.currentRoom[index].id, res=>{
 
-                let resJson = JSON.parse(res.body)
+              let resJson = JSON.parse(res.body)
 
-                if(resJson.type === "JOIN"){
-                  this.messageActive = true
-                  this.messageCoverActive = true
-                  resJson.content = resJson.content + '방에' + resJson.sender + '님이 입장하였습니다.'
-                }else if(resJson.type === "LEAVE"){
-                  this.messageActive =  true
-                  this.messageCoverActive = true
-                  resJson.content = resJson.sender + '님이 나갔습니다.'
-                }else{
-                  this.chatAcive = true
-                  this.chatCoverActive = true
+              let messageElement = document.createElement('li')
+              let messageCoverElement = document.createElement('span')
 
-                  if(resJson.sender === this.userName){
-                    this.meActive = true
-                  }
+              if(resJson.type === "JOIN"){
+                messageCoverElement.classList.add('event-message-cover')
+                messageElement.classList.add('event-message')
+                resJson.content = "'"+resJson.sender+"'" + '님이 입장하였습니다. 🐱 '
+              }else if(resJson.type === "LEAVE"){
+                messageCoverElement.classList.add('event-message-cover')
+                messageElement.classList.add('event-message')
+                resJson.content = resJson.sender + '님이 나갔습니다. 💨'
+              }else{
+                messageCoverElement.classList.add('chat-message-cover')
+                messageElement.classList.add('chat-message')
 
-                  let avatarElement = document.createElement('i');
-                  let avatarText = document.createTextNode(resJson.sender[0])
-                  this.$refs.li.appendChild(avatarText)
-
-                  this.$refs.span.appendChild(avatarElement)
-
-                  let usernameElement = document.createElement('span')
-                  let usernameText = document.createTextNode(resJson.sender);
-                  usernameElement.appendChild(usernameText)
-                  this.$refs.span.appendChild(usernameElement)
+                if(resJson.sender === this.userName){
+                messageCoverElement.classList.add('me')
+                messageElement.classList.add('me')
                 }
+/*
+                let avatarElement = document.createElement('i');
+                let avatarText = document.createTextNode(resJson.sender[0])
+                avatarElement.appendChild(avatarText)
 
-                let textElement = document.createElement('p');
-                textElement.classList.add('user-text')
-                let messageText = document.createTextNode(resJson.content);
-                textElement.appendChild(messageText)
+                messageCoverElement.appendChild(avatarElement)
+*/
+                let usernameElement = document.createElement('span')
+                let usernameText = document.createTextNode(resJson.sender);
+                usernameElement.appendChild(usernameText)
+                messageCoverElement.appendChild(usernameElement)
+              }
 
-                this.$refs.span.appendChild(textElement)
-                this.$refs.li.appendChild(this.$refs.span)
+              let textElement = document.createElement('p');
+              textElement.classList.add('user-text')
+              let messageText = document.createTextNode(resJson.content);
+              textElement.appendChild(messageText)
 
-                this.$refs.messageArea.appendChild(this.$refs.span)
-                
+              messageCoverElement.appendChild(textElement)
+              messageElement.appendChild(messageCoverElement)
+
+              this.$refs.messageArea.appendChild(messageElement)
+              
+            })
+
+            this.$store.state.stompClient.send('/app/chat.addUser/'+this.currentRoom[index].id,
+              JSON.stringify({
+                content:this.currentRoom[index].title,
+                sender:this.userName,
+                type:'JOIN'
               })
+            )
+          },
+          error => {
+            console.log('소켓연결 실패' + JSON.stringify(error));
+          }
+        )
 
-              this.$store.state.stompClient.send('/app/chat.addUser/'+this.currentRoom[index].id,
-                JSON.stringify({
-                  content:this.currentRoom[index].title,
-                  sender:this.userName,
-                  type:'JOIN'
-                })
-              )
-            },
-            error => {
-              console.log('소켓연결 실패' + JSON.stringify(error));
-            }
-          )
-
-          // 대화 초기화 설정하기
-          this.$refs.messageArea = null;
-
+        // 대화 초기화 설정하기
+        this.$refs.messageArea = null;
       }
     },
     listIndex(index){
       this.mIndex = index
       this.connectWebSocket(index); 
+      this.chatContentActive = true
     },
-
+    exit(){
+      this.$router.push('/');
+      location.reload();
+    }
   }  
   
 };

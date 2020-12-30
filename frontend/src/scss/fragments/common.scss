@@ -109,6 +109,7 @@ body{
 }
 
 .v-application{
+  background-color: #b5b5b5 !important;
   font-family: 'TmoneyRoundWindRegular','Noto Sans KR', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -137,3 +138,10 @@ input[type=submit]{
   margin:0px !important;
 }
 
+.mobile-content{
+  border:1px solid #b5b5b5;
+  height: 736px;
+  margin:6% auto;
+  position: relative;
+  width: 414px;
+}

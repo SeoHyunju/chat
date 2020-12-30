@@ -1,15 +1,17 @@
 .aside-content{
   //position: absolute;
   //left:0px;
+  height: 100%;
 
   .menu-list{
     background-color: #f5e8f8b0 !important;
     height: 100%;
     
     p{
-      padding-left:20px;
-      padding-top:20px;
+      border-bottom:1px solid #b5b5b5;
+      padding:20px 0px 20px 20px ;
       font-size: 20px;
+      margin-bottom:0px;
     }
 
     .menu-img{

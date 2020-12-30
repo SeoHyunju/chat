@@ -10,6 +10,10 @@ const router = new VueRouter({
     path:'/:model',
     component:() => import('../components/ChatRoom'),
     name:'chatRoom',
+   },{
+     path : '/',
+     component:() => import('../App'),
+     name:"main"
    }
   ]
 })
