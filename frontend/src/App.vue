@@ -34,6 +34,7 @@
             <v-btn @click="exit"><v-icon>mdi-arrow-left-bold</v-icon> </v-btn>
             <span class="img-icon"><img :src = rooms[mIndex].img></span>
             {{currentRoom[mIndex].title}}
+            
           </div>
           
           <ul ref="messageArea" class="message-area">
@@ -76,6 +77,7 @@ export default {
       max:10,
       member:0
     },
+    /*
     {
       id:'2',
       type:1,
@@ -85,7 +87,9 @@ export default {
       img:'/img/santa-claus.23b372ab.png',
       max:10,
       member:null
-    }],
+    }
+    
+    */],
     mIndex:null
   }),
   methods:{
@@ -94,7 +98,7 @@ export default {
         this.$store.state.stompClient.send('/app/chat.removeUser/' + this.currentRoom[this.mIndex].id,
           JSON.stringify({sender:this.userName, type:'LEAVE'})
         )
-        this.$store.state.stompClient.disConnect();
+        this.$store.state.stompClient.this.disConnect();
         this.currentRoom = null
       }
     },
@@ -154,13 +158,7 @@ export default {
                 messageCoverElement.classList.add('me')
                 messageElement.classList.add('me')
                 }
-/*
-                let avatarElement = document.createElement('i');
-                let avatarText = document.createTextNode(resJson.sender[0])
-                avatarElement.appendChild(avatarText)
 
-                messageCoverElement.appendChild(avatarElement)
-*/
                 let usernameElement = document.createElement('span')
                 let usernameText = document.createTextNode(resJson.sender);
                 usernameElement.appendChild(usernameText)
@@ -176,6 +174,8 @@ export default {
               messageElement.appendChild(messageCoverElement)
 
               this.$refs.messageArea.appendChild(messageElement)
+
+              this.$refs.messageArea.scrollTop = this.$refs.messageArea.scrollHeight;
               
             })
 
